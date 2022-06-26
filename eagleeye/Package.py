@@ -6,8 +6,8 @@ import zstandard
 
 from pathlib import Path
 
-from Parse import Parse
-from Download import Download
+from eagleeye.Parse import Parse
+from eagleeye.Download import Download
 
 
 class Package:
