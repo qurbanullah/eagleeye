@@ -1,9 +1,9 @@
 import sys
 import argparse
 
-from eagleeye.Functions import Functions
-from eagleeye.Database import Database
-from eagleeye.Package import Package
+from Functions import Functions
+from Database import Database
+from Package import Package
 
 def main():
 

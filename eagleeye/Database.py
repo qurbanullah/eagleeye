@@ -2,9 +2,9 @@ import os
 import shutil
 from datetime import datetime
 
-from eagleeye.Download import Download
-from eagleeye.Functions import Functions
-from eagleeye.Parse import Parse
+from Download import Download
+from Functions import Functions
+from Parse import Parse
 
 
 class Database:
