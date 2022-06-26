@@ -9,6 +9,4 @@
 *.log.*
 *.sig
 
-/venv
-/.vscode
 /__pycache__

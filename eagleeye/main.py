@@ -1,13 +1,15 @@
 import sys
 import argparse
 
-from .Functions import Functions
-from .Database import Database
-from .Package import Package
+from eagleeye.Functions import Functions
+from eagleeye.Database import Database
+from eagleeye.Package import Package
 
 def main():
 
     pkgname = None
+    install_package = 0
+    remove_package = 0
 
 
     avouch_packages_download_api_url = "https://avouch.org/api/download-package/"
@@ -51,19 +53,38 @@ def main():
      
     #Parsing the argument
     args=parser.parse_args()
-    # print(args)
-    #Initialize result to None
-    pkgname = None
+
  
+    functions = Functions()
+    pkgdb = Database(avouch_packages_database_download_api_url)
+    package = Package(avouch_packages_download_api_url)
+    
     # Install packge
     if args.install:
         pkgname = args.install
-        # print("Package to install = " ,pkgname)
+        
+        if functions.check_for_sudo_privilege() == 0:
+            # update package database first
+            pkgdb.update()
+
+            for pkg in pkgname:
+                package.install(pkg)                
+        else:
+            # the user wasn't authenticated as a sudoer, exit?
+            print("The user wasn't authenticated as a sudoer")
+            sys.exit(1)
  
     # Install packge
     if args.remove:
         pkgname = args.remove
-        print("Package to remove = " ,pkgname)
+
+        if functions.check_for_sudo_privilege() == 0:
+            for pkg in pkgname:
+                package.remove(pkg)                
+        else:
+            # the user wasn't authenticated as a sudoer, exit?
+            print("The user wasn't authenticated as a sudoer")
+            sys.exit(1)
 
     # Update package database
     if args.update:
@@ -77,24 +98,6 @@ def main():
     if args.install and args.remove:
         print("Installing and removing a package at same time is not alowed")
         sys.exit(1)
-
-    # print("{} {}".format((os.geteuid()), os.getuid()))
-    func = Functions()
-    pkgdb = Database(avouch_packages_database_download_api_url)
-    package = Package(avouch_packages_download_api_url)
-    
-    if func.check_for_sudo_privilege() == 0:
-        # update package database first
-        pkgdb.update()
-
-        for pkg in pkgname:
-            package.install(pkg)                
-    else:
-        # the user wasn't authenticated as a sudoer, exit?
-        print("The user wasn't authenticated as a sudoer")
-        sys.exit(1)
-
-
 
 if __name__ == '__main__':
     main()

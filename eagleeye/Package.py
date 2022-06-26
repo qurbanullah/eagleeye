@@ -6,8 +6,8 @@ import zstandard
 
 from pathlib import Path
 
-from .Parse import Parse
-from .Download import Download
+from eagleeye.Parse import Parse
+from eagleeye.Download import Download
 
 
 class Package:
@@ -204,3 +204,25 @@ class Package:
                 return
         else:
             print(pkgname, "is not available")
+
+    def remove(self, pkgname):
+        if  self.verify_package_is_already_installed(pkgname) != 0:
+            pkginfo_file = "/usr/share/avouch/pkginfo/" + pkgname +".xml"
+            installed_files = self.xml.get_xml_element_text_array_from_package_info_file(pkginfo_file, 'File')
+            print(installed_files)
+            # install dependancies
+            print("Removing package...")
+            for dep in installed_files:
+                print("Removing: ", dep)
+                os.remove(dep)
+
+            # print(""+ pkginfo_path +"/"+"".join(self.pkgname) +".xml")
+            if os.path.exists(pkginfo_file):
+                print("Error removing package")
+                return 1
+            else:
+                print("Package removed successfully")
+                return 0                       
+        else:
+            print(pkgname, "is already installed")
+            return
