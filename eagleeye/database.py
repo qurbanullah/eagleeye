@@ -2,9 +2,9 @@ import os
 import shutil
 from datetime import datetime
 
-from eagleeye.Download import Download
-from eagleeye.Functions import Functions
-from eagleeye.Parse import Parse
+from .download import Download
+from .functions import Functions
+from .parse import Parse
 
 
 class Database:
@@ -39,12 +39,15 @@ class Database:
             diff_date = today_date - database_date_time_obj
             # print(diff_date)
 
+            now = datetime.now() # current date and time
+            date_time = now.strftime("%m-%d-%Y_%H-%M-%S")
+
             # if difference is greater than 3 days 86400 seconda in 1 day
             # 86400 x 3 259200
             if diff_date.total_seconds() > 259200.0:
                 print("Database is too old, updating...")
                 # backup the previous database
-                shutil.move(pkgdb_file, pkgdb_file + "." + today_date)
+                shutil.move(pkgdb_file, pkgdb_file + "." + date_time)
 
                 dl = Download()
                 dl.download(pkgdb_url, pkgdb_archive)

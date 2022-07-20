@@ -64,7 +64,7 @@ class Download:
                 unit_divisor=1024,  # is used when unit_scale is true
                 total=filesize,  # the total iteration.
                 file=sys.stdout,  # default goes to stderr, this is the display on console.
-                desc=filename.split("/")[-1]  # prefix to be displayed on progress bar.
+                desc=filename.split("/")[-1]  # prefix to be displayed on progress bar. split the url by "/" then get the last index with -1.
         ) as progress:
             for chunk in r.iter_content(chunk_size=chunk_size):
                 # download the file chunk by chunk

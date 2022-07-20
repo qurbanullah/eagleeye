@@ -1,9 +1,10 @@
 import sys
+sys.path.insert(0, "eagleeye")
 import argparse
 
-from eagleeye.Functions import Functions
-from eagleeye.Database import Database
-from eagleeye.Package import Package
+from eagleeye.functions import Functions
+from eagleeye.database import Database
+from eagleeye.package import Package
 
 def main():
 

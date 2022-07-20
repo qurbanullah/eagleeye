@@ -40,7 +40,7 @@ setup(
     entry_points={
         # Install a script
         'console_scripts': [
-            'ee = eagleeye.main:main',
+            'ee = main:main',
         ],
     },
     python_requires='>=3.10',
