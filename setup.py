@@ -46,12 +46,7 @@ setup(
     python_requires='>=3.10',
     install_requires=[
         'zstandard',
-        'pathlib',
         'tqdm',
-        'shutil',
-        'tempfile',
-        'tarfile',
         'argparse',
-        'xml.etree.ElementTree',
     ],
 )
