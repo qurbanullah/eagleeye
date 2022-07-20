@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0, ".eagleeye")
 import argparse
 
 from eagleeye.functions import Functions
