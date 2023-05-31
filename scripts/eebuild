@@ -8,7 +8,7 @@ set -e
 
 BASENAME="$(basename "${0}")"
 PARAMETER=${1}
-EEVER=0.2.1
+EEVER=0.4.0
 
 # change to english locale!
 export LANG="en_US"
@@ -19,6 +19,11 @@ LIBRARY=${LIBRARY:-'/usr/share/eebuild'}
 # for lib in "$LIBRARY"/*.sh; do
 # 	source "$lib"
 # done
+
+# initialize variable
+PKGNAME=""
+BUILD=""
+INSTALL=""
 
 
 ########################################################################
@@ -131,7 +136,7 @@ fi
 	
 	# fallback to default
 	if [ -z ${AVHVER} ]; then
-		AVHVER="avh030"
+		AVHVER="avh040"
 	fi
 	if [ -z ${ARCH} ]; then
 		ARCH="x86_64"
@@ -191,7 +196,7 @@ fi
 	# check_if_ld_gold_is_default_linker=$(/usr/bin/ld --version | grep "GNU gold")	
 	# if [[ $(/usr/bin/ld --version | grep "GNU gold") ]]; then
 	# 	message "LDFLAGS for ld.gold is enabled"
-	# 	LDFLAGS="-z relro -z now -O2"		
+		# LDFLAGS="-z relro -z now -O2"	
 	# else
 	# 	message "LDFLAGS for ld.bfd is enabled"
 	# 	LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-Wl,-z,relro -Wl,-z,now"		
@@ -2052,9 +2057,7 @@ makepkg(){
 			else
 				mv -f "${avhpkg}${PKGEXT}" "${builddir}/${avhpkg}${PKGEXT}"				
 			fi
-			if [[ "${PARAMETER}" == "-bi" || "${PARAMETER}" == "--build-install" ]]; then
-				install_pkg "${avhpkg}"			
-			elif [[ "${PARAMETER}" == "-bli" || "${PARAMETER}" == "--build-list-install" ]]; then
+			if [ ${INSTALL} -eq 1 ]; then
 				install_pkg "${avhpkg}"
 			fi
 		fi
@@ -2101,8 +2104,10 @@ install_pkg(){
 use_linker() {
 
 	if [[ -n ${1} ]]; then
-		if [[ ${1}=="gold" ]];then
+		if [[ ${1} == "gold" ]];then
 			message "Using ld.gold linker..."
+
+			LDFLAGS="-z relro -z now -O2"
 			
 			CFLAGS=${CFLAGS/-fuse-ld=lld/}
 			CFLAGS=${CFLAGS/-fuse-ld=gold/}
@@ -2110,12 +2115,12 @@ use_linker() {
 			
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=lld/}
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=gold/}
-			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=bfd/}
+			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=bfd/}			
 
 			CFLAGS+=" -fuse-ld=gold"
-			LDFLAGS+=" -Wl,-fuse-ld=gold"
+			LDFLAGS+=" -fuse-ld=gold"
 
-		elif [[ ${1}=="lld" ]];then			
+		elif [[ ${1} == "lld" ]];then			
 
 			message "Using ld.ldd linker..."
 
@@ -2127,10 +2132,12 @@ use_linker() {
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=gold/}
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=bfd/}
 
-			CFLAGS+=" -fuse-ld=lld"
-			LDFLAGS+=" -Wl,-fuse-ld=lld"
+			LDFLAGS="-O2,--sort-common,--as-needed,-Wl,-z,relro,-Wl,-z,now"	
 
-		elif [[ ${1}=="ld" ]];then
+			CFLAGS+=",-fuse-ld=lld"
+			LDFLAGS+=",-fuse-ld=lld"
+
+		elif [[ ${1} == "ld" ]];then
 			message "Using ld.bfd linker..."
 
 			CFLAGS=${CFLAGS/-fuse-ld=lld/}
@@ -2141,32 +2148,46 @@ use_linker() {
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=gold/}
 			LDFLAGS=${LDFLAGS/-Wl,-fuse-ld=bfd/}
 
+			LDFLAGS="-O2,--sort-common,--as-needed, -Wl,-z,relro -Wl,-z,now"	
+
 			CFLAGS+=" -fuse-ld=bfd"
-			LDFLAGS+=" -Wl,-fuse-ld=bfd"
+			LDFLAGS+=" -fuse-ld=bfd"
 		fi
 
 	else
-		echo "Linker to use is ${1} 222"
+		echo "Linker to use is ${1}"
 		# for speed up limking use lld (10x faster) gold (3x faster)
 		if command_exists "ld.gold"; then
 			message "Fallback to ld.gold limker..."
+
+			LDFLAGS="-z relro -z now -O2"
 			CFLAGS+=" -fuse-ld=gold"
 			LDFLAGS+=" -Wl,-fuse-ld=gold"
+
 		elif command_exists "ld.ldd"; then
 			message "Fallback to ld.ldd limker..."
+
+			LDFLAGS="-z relro -z now -O2"
 			CFLAGS+=" -fuse-ld=lld"
 			LDFLAGS+=" -Wl,-fuse-ld=lld"
 
 		elif command_exists "ld.bfd"; then
 			message "Fallback to ld.bfd limker..."
+
+			LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-Wl,-z,relro -Wl,-z,now"	
 			CFLAGS+=" -fuse-ld=bfd"
 			LDFLAGS+=" -Wl,-fuse-ld=bfd"
 
 		else
-			CFLAGS+=" "
-			LDFLAGS+=" "
+			CFLAGS+=""
+			LDFLAGS+=""
 		fi
 	fi
+		export CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+		message "CFLAGS: ${CFLAGS}"
+		message "CPPFLAGS: ${CPPFLAGS}"
+		message "CXXFLAGS: ${CXXFLAGS}"
+		message "LDFLAGS: ${LDFLAGS}"
 }
 ########################################################################
 package_build(){
@@ -2245,11 +2266,6 @@ package_build(){
 		if ( function_exists 'build' );then
 
 		# use_linker "ld"
-
-		
-		export CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
-		echo ${CFLAGS}
-		echo ${LDFLAGS}
 		
 
 			pushd "${srcdir}"
@@ -2260,7 +2276,6 @@ package_build(){
 				#retval=$? # '$?' is the return value of the previous command
 				message "$(gettext "Retun value is : ${retval}")"
 				function_status "$retval" ${1}
-				unset $retval
 			popd
 		else			
 			warning "$(gettext "Funtion build() does not exist.")"
@@ -2274,7 +2289,6 @@ package_build(){
 				check || retval=$?
 				message "$(gettext "Retun value is : ${retval}")"
 				function_status "$retval" ${1}
-				unset $retval
 			popd
 		else
 			warning "$(gettext "Funtion check() does not exist.")"
@@ -2295,21 +2309,21 @@ package_build(){
 					package	|| retval=$?
 					message "$(gettext "Retun value is : ${retval}")"
 					function_status "$retval" ${1}
-					unset $retval
 
 					makepkg "${pkgname}"
 				popd	
 
 			elif [ ${total_no_of_packages} > 1 ]; then
 				#for ((length=0; i<=$(( $arraylength-1 )); length++))
-				for pkg in ${pkgname[@]};do		
+				for pkg in ${pkgname[@]};do
+					unset pkgname
+					pkgname=$pkg
 					clean_pkgdir
 					message "$(gettext "Package is : ${pkg}")"
 					pushd "${srcdir}"	
 						package_"${pkg}" || retval=$?
 						message "$(gettext "Retun value is : ${retval}")"
 						function_status "$retval" ${pkg}
-						unset $retval
 
 						makepkg "${pkg}"
 					popd
@@ -2331,29 +2345,27 @@ package_build(){
 ########################################################################
 main() {
 	#  check for second argument
-	if [ -z "${2}" ]; then
-		PKGNAME="NULL"
-	else		
-		if [ -f "${2}" ]; then
-			# echo "File is : ${2}"
-			PKGNAME=$(grep -v '^#' "${2}")
-		elif [ -f "${2}.avhp" ]; then
-			PKGNAME="${2}.avhp"
-		else
-			PKGNAME="${2}"
-		fi
-	fi
+	# if [ -z "${2}" ]; then
+	# 	PKGNAME="NULL"
+	# else		
+	# 	if [ -f "${2}" ]; then
+	# 		# echo "File is : ${2}"
+	# 		PKGNAME=$(grep -v '^#' "${2}")
+	# 	elif [ -f "${2}.avhp" ]; then
+	# 		PKGNAME="${2}.avhp"
+	# 	else
+	# 		PKGNAME="${2}"
+	# 	fi
+	# fi
 	ARGUMENT_LIST=(
 	"build"
-	"directory"
-	"framework"
 	)
 
 	# Call getopt to validate the provided input. 
 	options=$(getopt \
-			--longoptions help,fresh,"$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
+			--longoptions help,fresh,build,install,"$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
 			--name "$(basename "$0")" \
-			--options "b:il:cd:fg:hs" \
+			--options "ib:" \
 			-- "$@"
 			)
 	# [ $? -eq 0 ] || { 
@@ -2369,75 +2381,62 @@ main() {
             -h) show_usage; exit ;;
             --help) show_help; exit ;;
 			-b|--build)
-                BUILD="1"
-				build_tools_exists
-				unset srcdir
-				srcdir="${builddir}/${2}"
-				mkdir -p $srcdir
-				package_build ${2}  2>&1 | tee -a "${srcdir}/build.log";
+				if [ -z "${2}" ]; then
+					PKGNAME=""
+				else		
+					if [ -f "${2}" ]; then
+						# echo "File is : ${2}"
+						PKGNAME=( $(grep -v '^#' "${2}"))
+					else
+						PKGNAME="${2}"		
+					fi
+				fi
+                BUILD=1
+				INSTALL=1
+				# build_tools_exists
+				# unset srcdir
+				# srcdir="${builddir}/${2}"
+				# mkdir -p $srcdir
+				# package_build ${2}  2>&1 | tee -a "${srcdir}/build.log";
 				# shift both 1st and 2nd arcgument to avoid any confusion for next run
 				shift 2 ;;
-            -i|--build-install)
-                BUILD="1" INSTALL="1"
-				build_tools_exists
-				unset srcdir
-				srcdir="${builddir}/${2}"
-				mkdir -p $srcdir
-				package_build ${2}  2>&1 | tee -a "${srcdir}/build.log"
+            -i|--install)
+                INSTALL=1
+				# build_tools_exists
+				# unset srcdir
+				# srcdir="${builddir}/${2}"
+				# mkdir -p $srcdir
+				# package_build ${2}  2>&1 | tee -a "${srcdir}/build.log"
 				# shift both 1st and 2nd arcgument to avoid any confusion for next run
 				shift 2 ;;			
-            -l|--build-list)
-                BUILD="1"
-				LIST="1"
-				build_tools_exists
-				for pkgs in ${PKGNAME[@]}
-				do
-					unset srcdir
-					srcdir="${builddir}/${pkgs}"
-					mkdir -p $srcdir
-					package_build $pkgs  2>&1 | tee -a "${srcdir}/build.log"
-				done
+            # -l|--build-list)
+            #     BUILD=1
+			# 	LIST=1
+				# build_tools_exists
+				# for pkgs in ${PKGNAME[@]}
+				# do
+				# 	unset srcdir
+				# 	srcdir="${builddir}/${pkgs}"
+				# 	mkdir -p $srcdir
+				# 	package_build $pkgs  2>&1 | tee -a "${srcdir}/build.log"
+				# done
 				# shift both 1st and 2nd arcgument to avoid any confusion for next run
-				shift 2 ;;
-            -bli|--build-install-install) 
-				BUILD="1"
-				LIST="1"
-				INSTALL="1"
-				build_tools_exists
-				for pkgs in ${PKGNAME[@]}
-				do					
-					unset srcdir
-					srcdir="${builddir}/${pkgs}"
-					mkdir -p $srcdir
-					package_build $pkgs  2>&1 | tee -a "${srcdir}/build.log"	
-				done
+				# shift 2 ;;
+            # -bli|--build-install-install) 
+			# 	BUILD=1
+			# 	LIST=1
+			# 	INSTALL=1
+				# build_tools_exists
+				# for pkgs in ${PKGNAME[@]}
+				# do					
+				# 	unset srcdir
+				# 	srcdir="${builddir}/${pkgs}"
+				# 	mkdir -p $srcdir
+				# 	package_build $pkgs  2>&1 | tee -a "${srcdir}/build.log"	
+				# done
 				# shift both 1st and 2nd arcgument to avoid any confusion for next run
-				shift 2 ;;
-			-i|--install)
-                INSTALL="1"
-				if checkForRoot; then
-					updatePackagesDatabase
-					for pkg in ${PKGNAME[@]}
-					do
-						installPackage ${pkg}
-					done
-				else
-					error "$(gettext "Root privileges are required. Try sudo!")"
-					exit 1
-				fi
-				shift 2 ;;
-			-if|--install-file)
-                INSTALL="1"
-				if checkForRoot; then
-					for pkg in ${PKGNAME[@]}
-					do
-						installPackageFromFile ${pkg}
-					done
-				else
-					error "$(gettext "Root privileges are required. Try sudo!")"
-					exit 1
-				fi
-				shift 2 ;;
+				# shift 2 ;;
+
             -*)
                 die "unrecognized argument: ${1}" ;;
             *)
@@ -2445,7 +2444,36 @@ main() {
         esac
 		shift
 	done
-	
+
+	echo ${#PKGNAME[@]}
+
+	echo "Build opions is : ${BUILD}"
+	echo "Install opions is : ${INSTALL}"
+
+	if [ ${BUILD} -eq 1 ]; then
+		build_tools_exists
+		# default linker to use
+		use_linker "gold"
+
+		if [ ${#PKGNAME[@]} -eq 1 ]; then
+			unset srcdir
+			srcdir="${builddir}/${PKGNAME}"
+			mkdir -p $srcdir
+			package_build ${PKGNAME}  2>&1 | tee -a "${srcdir}/build.log";
+		elif [ ${#PKGNAME[@]} -gt 1 ]; then
+			for pkg in ${PKGNAME[@]}
+			do					
+				unset srcdir
+				srcdir="${builddir}/${pkg}"
+				mkdir -p $srcdir
+				package_build ${pkg}  2>&1 | tee -a "${srcdir}/build.log"	
+			done
+		else
+			error "No package to build"
+		fi
+	else
+		error "No option seected"
+	fi
 
 }
 

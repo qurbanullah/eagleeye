@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 prefix = os.environ.get("prefix", "/usr")
 name = 'eagleeye'
-version = '0.3.0'
+version = '0.4.0'
 
 
 with open("README.md", "r") as fh:
